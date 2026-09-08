@@ -29,11 +29,20 @@ val abis = listOf(
 )
 val gradleToCargoProfiles = mapOf(
     "debug" to "debug",
+    "actions" to "debug",
     "release" to "release-android",
 )
 
 android {
     signingConfigs {
+        providers.environmentVariable("OPENSCQ30_KEYSTORE_PATH").orNull?.let { keystorePath ->
+            create("actions") {
+                storeFile = file(keystorePath)
+                storePassword = providers.environmentVariable("OPENSCQ30_KEYSTORE_PASSWORD").get()
+                keyPassword = providers.environmentVariable("OPENSCQ30_KEYSTORE_PASSWORD").get()
+                keyAlias = "openscq30-actions"
+            }
+        }
         if (keystorePropertiesFile.exists()) {
             create("release") {
                 storeFile = file(keystoreProperties["storeFile"] as String)
@@ -51,8 +60,8 @@ android {
         applicationId = "com.oppzippy.openscq30"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1028
-        versionName = "2.12.0"
+        versionCode = 1029
+        versionName = "2.12.0-actions.1"
 
         testInstrumentationRunner = "com.oppzippy.openscq30.HiltTestRunner"
         vectorDrawables {
@@ -89,6 +98,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+
+        create("actions") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".actions"
+            isDebuggable = false
+            signingConfig = signingConfigs.findByName("actions")
+            matchingFallbacks += "debug"
         }
 
         named("release") {

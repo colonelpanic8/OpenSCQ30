@@ -1,0 +1,9 @@
+[
+    {
+        "id": "com.oppzippy.openscq30.actions",
+        "url": "https://github.com/colonelpanic8/OpenSCQ30",
+        "author": "colonelpanic8",
+        "name": "OpenSCQ30 Actions",
+        "additionalSettings": "{\"includePrereleases\":true,\"apkFilterRegEx\":\"^openscq30-actions-arm64-v8a\\\\.apk$\"}"
+    }
+]
