@@ -3,7 +3,7 @@ use std::{panic::Location, sync::Arc};
 use async_trait::async_trait;
 use indexmap::IndexMap;
 use macaddr::MacAddr6;
-use tokio::sync::watch;
+use tokio::sync::{broadcast, watch};
 
 use crate::{devices::DeviceModel, macros::impl_from_source_error_with_location, storage};
 
@@ -66,8 +66,20 @@ pub trait OpenSCQ30DeviceRegistry {
     ) -> Result<Arc<dyn OpenSCQ30Device + Send + Sync>>;
 }
 
+/// A discrete user action reported by a device, separate from state updates.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DeviceEvent {
+    AssistantRequested,
+}
+
 #[async_trait]
 pub trait OpenSCQ30Device {
+    /// Subscribes to future user actions. Unsupported devices return None.
+    /// Receivers must discard lagged events instead of replaying stale actions.
+    fn subscribe_to_events(&self) -> Option<broadcast::Receiver<DeviceEvent>> {
+        None
+    }
+
     /// Returns a tokio::sync::watch::Receiver for tracking when the connection disconnects.
     fn connection_status(&self) -> watch::Receiver<ConnectionStatus>;
 

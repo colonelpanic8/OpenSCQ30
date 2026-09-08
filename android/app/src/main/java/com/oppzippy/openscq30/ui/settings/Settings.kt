@@ -37,6 +37,7 @@ fun Settings(viewModel: SettingsViewModel = hiltViewModel()) {
         onDynamicColorChange = { viewModel.setDynamicColor(it) },
         onCopyLogs = { viewModel.copyLogs() },
         onCopyLogsUnfiltered = { viewModel.copyLogsUnfiltered() },
+        customActionSettings = { CustomActionSettings() },
     )
 }
 
@@ -50,6 +51,7 @@ private fun Settings(
     onDynamicColorChange: (Boolean) -> Unit,
     onCopyLogs: () -> Unit,
     onCopyLogsUnfiltered: () -> Unit,
+    customActionSettings: @Composable () -> Unit = {},
 ) {
     Column(
         Modifier
@@ -62,6 +64,8 @@ private fun Settings(
             isChecked = autoConnect,
             onCheckedChange = { onAutoConnectChange(it) },
         )
+
+        customActionSettings()
 
         val themes = listOf(
             null to stringResource(R.string.system_theme),
