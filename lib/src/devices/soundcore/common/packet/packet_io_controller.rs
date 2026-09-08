@@ -72,15 +72,14 @@ impl PacketIOController {
                         match packet::Inbound::take::<VerboseError<_>>(checksum_kind)(&buffer[start_index..]) {
                             Ok(parsed) => parsed,
                             Err(nom::Err::Incomplete(_)) => break,
-                            Err(err) => {
-                                tracing::warn!("failed to parse packet: {err:?}");
-                                tracing::warn!("clearing buffer: {buffer:?}");
+                            Err(_) => {
+                                tracing::warn!(bytes = buffer.len(), "discarding invalid Bluetooth packet");
                                 buffer.clear();
                                 continue 'receive_packet;
                             }
                         };
 
-                    tracing::debug!("received packet {packet:?}");
+                    tracing::debug!(command = ?packet.command, bytes = packet.body.len(), "received packet");
                     let packet_length = buffer.len() - start_index - remainder.len();
                     start_index += packet_length;
 
@@ -106,7 +105,7 @@ impl PacketIOController {
         self.connection.connection_status()
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self, packet))]
     pub async fn send_with_response(
         &self,
         packet: &packet::Outbound,

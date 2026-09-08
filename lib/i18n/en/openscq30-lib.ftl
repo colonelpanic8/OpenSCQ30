@@ -35,6 +35,7 @@ soundcore-a3957 = Soundcore Liberty 5
 soundcore-d1101 = Soundcore C50i
 soundcore-d1202 = Soundcore P31i
 soundcore-d1202c = Soundcore R60i NC
+soundcore-d1203 = Soundcore Liberty 5 Pro (experimental)
 soundcore-d1301 = Soundcore Sleep A30
 soundcore-development = Soundcore Development Information
 
@@ -182,6 +183,11 @@ none = None
 
 state-update-packet = State Update Packet
 send-packet = Send Packet
+device-events = Device Events
+d1203-button-modes = Both earbuds: { $both }; one earbud: { $single }
+d1203-anka = Anka
+d1203-unknown-action = Unknown action ({ $id })
+d1203-waiting-for-events = Waiting for a device event
 
 yes = Yes
 no = No
