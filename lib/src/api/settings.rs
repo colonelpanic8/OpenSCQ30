@@ -120,6 +120,7 @@ pub enum SettingId {
     HostDevice,
     StateUpdatePacket,
     SendPacket,
+    DeviceEvents,
     MultiSceneNoiseCanceling,
     ExportCustomEqualizerProfiles,
     ExportCustomEqualizerProfilesOutput,
