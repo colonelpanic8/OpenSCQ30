@@ -18,6 +18,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.oppzippy.openscq30.R
+import com.oppzippy.openscq30.features.customactions.CustomActionLauncher
 import com.oppzippy.openscq30.features.soundcoredevice.connectionBackends
 import com.oppzippy.openscq30.features.statusnotification.storage.FeaturedSettingSlotDao
 import com.oppzippy.openscq30.features.statusnotification.storage.QuickPresetSlotDao
@@ -76,6 +77,9 @@ class DeviceService : LifecycleService() {
         private val _isRunning = MutableStateFlow(false)
         val isRunning = _isRunning.asStateFlow()
     }
+
+    @Inject
+    lateinit var customActionLauncher: CustomActionLauncher
 
     @Inject
     lateinit var session: OpenScq30Session
@@ -203,6 +207,15 @@ class DeviceService : LifecycleService() {
         )
 
         createNotificationChannel()
+        lifecycleScope.launch {
+            connectionStatusFlow.collectLatest { status ->
+                if (status is ConnectionStatus.Connected) {
+                    status.deviceManager.events.collect { event ->
+                        customActionLauncher.onDeviceEvent(event)
+                    }
+                }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

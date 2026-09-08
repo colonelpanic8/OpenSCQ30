@@ -63,6 +63,8 @@ private fun Settings(
             onCheckedChange = { onAutoConnectChange(it) },
         )
 
+        CustomActionSettings()
+
         val themes = listOf(
             null to stringResource(R.string.system_theme),
             ThemeType.Light to stringResource(R.string.light),
