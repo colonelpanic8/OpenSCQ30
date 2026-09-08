@@ -212,15 +212,13 @@ impl ManualRfcommConnection {
 #[uniffi::export]
 impl ManualRfcommConnection {
     pub fn add_inbound_packet(&self, inbound_packet: Vec<u8>) -> Result<(), ConnectionError> {
-        tracing::info!("got packet {inbound_packet:?}");
+        tracing::trace!(bytes = inbound_packet.len(), "received Bluetooth data");
         match &*self.inbound_packets_sender.read().unwrap() {
             Some(sender) => sender
                 .blocking_send(inbound_packet)
                 .map_err(|_| ConnectionError::WriteQueueFullError),
             None => {
-                tracing::warn!(
-                    "ManualConnection: add_inbound_packet called while inbound_packet_sender is None with {inbound_packet:?}"
-                );
+                tracing::warn!("ManualConnection: received data before the reader was attached");
                 Ok(())
             }
         }
