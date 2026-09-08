@@ -7,7 +7,10 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 
@@ -27,6 +30,12 @@ abstract class GenerateUniffiBindingsTask @Inject constructor(
     @get:Input
     abstract val rustWorkspaceDirectory: Property<File>
 
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    val nativeLibrary: File
+        get() = rustWorkspaceDirectory.get()
+            .resolve("target/${rustAbi.get()}/${cargoProfile.get()}/libopenscq30_android.so")
+
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
@@ -42,7 +51,7 @@ abstract class GenerateUniffiBindingsTask @Inject constructor(
                 "--",
                 "generate",
                 "--library",
-                "./target/${rustAbi.get()}/${cargoProfile.get()}/libopenscq30_android.so",
+                nativeLibrary.absolutePath,
                 "--language",
                 "kotlin",
                 "--out-dir",
