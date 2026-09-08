@@ -5,11 +5,17 @@ levels, firmware, the TWS connection state, and the existing button assignments.
 The Device Events field shows recent command IDs and payload lengths. It does
 not display or record microphone audio.
 
-Arbitrary Android app/deep-link actions are not implemented yet. First verify
-which command a physical press sends with the official Soundcore app stopped.
-The Anka start command observed in the vendor parser is `18:03`, but its arrival
-from this model has not yet been demonstrated. Ordinary playback and volume
-gestures may be handled inside the earbuds or by Android Bluetooth profiles.
+The integration branch includes the Android custom-action settings described in
+[Custom Android actions](custom-actions.md). Anka command `18:03` is forwarded
+as an assistant request. Its start/stop payload is not interpreted: either kind
+of request opens the configured link when custom actions are enabled. No
+recording commands are sent and audio packets do not trigger actions.
+
+This wiring is experimental. The command is identified by the vendor dispatcher,
+but delivery from a physical D1203 gesture has not yet been observed. Test the
+link using the settings Test action button, then verify a physical Anka press
+with the official Soundcore app stopped. Ordinary playback and volume gestures
+may be handled inside the earbuds or by Android Bluetooth profiles.
 
 The state parser is based on the public capture in
 [issue #342](https://github.com/Oppzippy/OpenSCQ30/issues/342), with identifiers

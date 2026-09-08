@@ -5,7 +5,10 @@ use std::{
 
 use async_trait::async_trait;
 use macaddr::MacAddr6;
-use tokio::{sync::watch, task::JoinHandle};
+use tokio::{
+    sync::{broadcast, watch},
+    task::JoinHandle,
+};
 
 use crate::{
     api::{
@@ -13,7 +16,7 @@ use crate::{
             ConnectionDescriptor, ConnectionStatus, RfcommBackend, RfcommConnection,
             RfcommServiceSelectionStrategy,
         },
-        device::{self, OpenSCQ30Device, OpenSCQ30DeviceRegistry},
+        device::{self, DeviceEvent, OpenSCQ30Device, OpenSCQ30DeviceRegistry},
         settings::{CategoryId, Setting, SettingId, Value},
     },
     devices::{
@@ -81,6 +84,7 @@ struct D1203Device {
     connection: Arc<dyn RfcommConnection + Send + Sync>,
     snapshot: Arc<RwLock<Snapshot>>,
     changes: watch::Sender<()>,
+    events: broadcast::Sender<DeviceEvent>,
     receiver: JoinHandle<()>,
 }
 
@@ -104,14 +108,19 @@ impl D1203Device {
             sequence: 0,
         }));
         let changes = watch::channel(()).0;
+        let events = broadcast::channel(16).0;
         let receiver = tokio::spawn({
             let snapshot = snapshot.clone();
             let changes = changes.clone();
+            let events = events.clone();
             async move {
                 while let Some(packet) = packets.recv().await {
                     // These commands contain microphone audio, not button events.
                     if matches!(packet.command.0, [0x18, 0x01 | 0x04]) {
                         continue;
+                    }
+                    if packet.command.0 == [0x18, 0x03] {
+                        let _ = events.send(DeviceEvent::AssistantRequested);
                     }
                     let mut snapshot = snapshot.write().unwrap();
                     if packet.command == RequestState::COMMAND {
@@ -142,6 +151,7 @@ impl D1203Device {
             connection,
             snapshot,
             changes,
+            events,
             receiver,
         })
     }
@@ -185,6 +195,10 @@ fn information(value: String) -> Setting {
 
 #[async_trait]
 impl OpenSCQ30Device for D1203Device {
+    fn subscribe_to_events(&self) -> Option<broadcast::Receiver<DeviceEvent>> {
+        Some(self.events.subscribe())
+    }
+
     fn connection_status(&self) -> watch::Receiver<ConnectionStatus> {
         self.connection.connection_status()
     }
@@ -293,6 +307,7 @@ mod tests {
             .unwrap();
         let device = init.await.unwrap().unwrap();
         let mut changes = device.watch_for_changes();
+        let mut events = device.subscribe_to_events().unwrap();
         inbound
             .send(
                 packet::Inbound::new(packet::Command([0x18, 0x04]), vec![10, 20, 30])
@@ -310,9 +325,32 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        let snapshot = device.snapshot.read().unwrap();
-        assert_eq!(snapshot.sequence, 1);
-        assert_eq!(snapshot.events.front().unwrap(), "#1 18:03 (1 bytes)");
-        assert_eq!(snapshot.state.battery_left, 60);
+        assert_eq!(events.try_recv().unwrap(), DeviceEvent::AssistantRequested);
+        assert_eq!(
+            events.try_recv(),
+            Err(broadcast::error::TryRecvError::Empty)
+        );
+        {
+            let snapshot = device.snapshot.read().unwrap();
+            assert_eq!(snapshot.sequence, 1);
+            assert_eq!(snapshot.events.front().unwrap(), "#1 18:03 (1 bytes)");
+            assert_eq!(snapshot.state.battery_left, 60);
+        }
+
+        for body in [vec![0], vec![1]] {
+            inbound
+                .send(
+                    packet::Inbound::new(packet::Command([0x18, 0x03]), body).bytes_with_checksum(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                tokio::time::timeout(std::time::Duration::from_secs(1), events.recv())
+                    .await
+                    .unwrap()
+                    .unwrap(),
+                DeviceEvent::AssistantRequested,
+            );
+        }
     }
 }

@@ -17,7 +17,8 @@ cancels collection. Targets are disabled by default; incoming events never carry
 URLs or intent payloads. Microphone capture is not part of this feature.
 
 A device driver must implement `subscribe_to_events()` and emit
-`DeviceEvent::AssistantRequested` for a verified physical gesture. Drivers that
-return the default `None` do not trigger custom actions. This change provides the
-Android action feature and common API; the Liberty 5 Pro integration wires its
-Anka event separately. It does not turn every firmware gesture into an app event.
+`DeviceEvent::AssistantRequested` for an assistant request. Drivers that
+return the default `None` do not trigger custom actions. The Liberty 5 Pro
+integration forwards Anka command `18:03`, including both start and stop requests,
+as this event. Physical delivery is still unverified.
+It does not turn every firmware gesture into an app event.
