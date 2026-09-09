@@ -23,3 +23,15 @@ redacted in the fixture. The related
 [Pro Max proposal](https://github.com/Oppzippy/OpenSCQ30/pull/305) documents the
 TLV layout. Unknown tags are skipped; malformed packets and other model IDs are
 rejected. Settings remain read-only until their write commands are verified.
+
+## Sound-mode action workaround
+
+Physical hardware captures contain `06:01` sound-mode reports and `0b:02`
+audio-focus reports. The latter is not an assistant or button-press event.
+The Android Sound mode update trigger uses distinct seven-byte `06:01` reports
+as an alternative to the unverified Anka trigger. No firmware setting is written
+by this workaround. The normal sound-mode change still occurs, and changes from
+other apps or automatic adjustments can also launch the action. Identical
+consecutive reports are suppressed, with a separate one-second launch debounce.
+The first report after each connection can trigger an action. See the custom
+Android actions page for configuration.

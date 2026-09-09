@@ -66,15 +66,16 @@ pub trait OpenSCQ30DeviceRegistry {
     ) -> Result<Arc<dyn OpenSCQ30Device + Send + Sync>>;
 }
 
-/// A discrete user action reported by a device, separate from state updates.
+/// A device notification that can be used as an action trigger.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DeviceEvent {
     AssistantRequested,
+    SoundModeChanged,
 }
 
 #[async_trait]
 pub trait OpenSCQ30Device {
-    /// Subscribes to future user actions. Unsupported devices return None.
+    /// Subscribes to future action triggers. Unsupported devices return None.
     /// Receivers must discard lagged events instead of replaying stale actions.
     fn subscribe_to_events(&self) -> Option<broadcast::Receiver<DeviceEvent>> {
         None

@@ -16,6 +16,8 @@ class CustomActionStore @Inject constructor(@ApplicationContext context: Context
             preferences.getBoolean("enabled", false),
             preferences.getString("uri", "") ?: "",
             preferences.getString("package", "") ?: "",
+            CustomActionTrigger.entries.firstOrNull { it.event == preferences.getString("trigger", null) }
+                ?: CustomActionTrigger.ASSISTANT,
         ),
     )
     val config = mutableConfig.asStateFlow()
@@ -26,6 +28,7 @@ class CustomActionStore @Inject constructor(@ApplicationContext context: Context
             putBoolean("enabled", config.enabled)
             putString("uri", config.uri)
             putString("package", config.packageName)
+            putString("trigger", config.trigger.event)
         }
         mutableConfig.value = config
     }

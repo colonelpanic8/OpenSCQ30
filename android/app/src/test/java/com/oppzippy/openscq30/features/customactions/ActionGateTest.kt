@@ -44,4 +44,14 @@ class ActionGateTest {
         now = 1000
         assertTrue(gate.accept(ASSISTANT_EVENT, action))
     }
+
+    @Test
+    fun onlyAcceptsTheSelectedTrigger() {
+        val gate = ActionGate { 0 }
+        val soundMode = action.copy(trigger = CustomActionTrigger.SOUND_MODE)
+        assertFalse(gate.accept(SOUND_MODE_EVENT, action))
+        assertFalse(gate.accept(ASSISTANT_EVENT, soundMode))
+        assertTrue(gate.accept(SOUND_MODE_EVENT, soundMode))
+        assertFalse(gate.accept(SOUND_MODE_EVENT, soundMode))
+    }
 }

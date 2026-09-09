@@ -69,10 +69,18 @@ impl OpenSCQ30Device {
             tokio::spawn(async move {
                 loop {
                     match events.recv().await {
-                        Ok(openscq30_lib::device::DeviceEvent::AssistantRequested) => {
+                        Ok(event) => {
+                            let event = match event {
+                                openscq30_lib::device::DeviceEvent::AssistantRequested => {
+                                    "assistant-requested"
+                                }
+                                openscq30_lib::device::DeviceEvent::SoundModeChanged => {
+                                    "sound-mode-changed"
+                                }
+                            };
                             let callback = callback.lock().unwrap().clone();
                             if let Some(callback) = callback {
-                                callback.on_event("assistant-requested".to_owned());
+                                callback.on_event(event.to_owned());
                             }
                         }
                         Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
@@ -253,6 +261,14 @@ mod event_tests {
                 .unwrap()
                 .as_deref(),
             Some("assistant-requested")
+        );
+        inner.events.send(DeviceEvent::SoundModeChanged).unwrap();
+        assert_eq!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), rx.recv())
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("sound-mode-changed")
         );
         drop(device);
         tokio::task::yield_now().await;

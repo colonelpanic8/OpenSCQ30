@@ -20,6 +20,10 @@ class CustomActionLauncher @Inject constructor(
 
     fun onDeviceEvent(event: String) {
         val config = store.config.value
+        Log.i(
+            "CustomActions",
+            "Device event: $event; selected trigger: ${config.trigger.event}; enabled: ${config.enabled}",
+        )
         if (!gate.accept(event, config)) return
         if (!Settings.canDrawOverlays(context)) {
             Log.w("CustomActions", "Custom action requires background launch permission")

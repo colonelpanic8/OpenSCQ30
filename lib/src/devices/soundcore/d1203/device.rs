@@ -114,6 +114,7 @@ impl D1203Device {
             let changes = changes.clone();
             let events = events.clone();
             async move {
+                let mut sound_mode_reports = SoundModeReports::default();
                 while let Some(packet) = packets.recv().await {
                     // These commands contain microphone audio, not button events.
                     if matches!(packet.command.0, [0x18, 0x01 | 0x04]) {
@@ -121,6 +122,9 @@ impl D1203Device {
                     }
                     if packet.command.0 == [0x18, 0x03] {
                         let _ = events.send(DeviceEvent::AssistantRequested);
+                    }
+                    if packet.command.0 == [0x06, 0x01] && sound_mode_reports.update(&packet.body) {
+                        let _ = events.send(DeviceEvent::SoundModeChanged);
                     }
                     let mut snapshot = snapshot.write().unwrap();
                     if packet.command == RequestState::COMMAND {
@@ -154,6 +158,22 @@ impl D1203Device {
             events,
             receiver,
         })
+    }
+}
+
+#[derive(Default)]
+struct SoundModeReports(Option<[u8; 7]>);
+
+impl SoundModeReports {
+    fn update(&mut self, body: &[u8]) -> bool {
+        let Ok(report) = <[u8; 7]>::try_from(body) else {
+            return false;
+        };
+        if self.0 == Some(report) {
+            return false;
+        }
+        self.0 = Some(report);
+        true
     }
 }
 
@@ -352,5 +372,37 @@ mod tests {
                 DeviceEvent::AssistantRequested,
             );
         }
+
+        for body in [vec![0; 7], vec![0; 7], vec![1; 6], vec![1; 7]] {
+            inbound
+                .send(
+                    packet::Inbound::new(packet::Command([0x06, 0x01]), body).bytes_with_checksum(),
+                )
+                .await
+                .unwrap();
+        }
+        inbound
+            .send(
+                packet::Inbound::new(packet::Command([0x18, 0x03]), vec![1]).bytes_with_checksum(),
+            )
+            .await
+            .unwrap();
+        for expected in [
+            DeviceEvent::SoundModeChanged,
+            DeviceEvent::SoundModeChanged,
+            DeviceEvent::AssistantRequested,
+        ] {
+            assert_eq!(
+                tokio::time::timeout(std::time::Duration::from_secs(1), events.recv())
+                    .await
+                    .unwrap()
+                    .unwrap(),
+                expected
+            );
+        }
+        assert_eq!(
+            events.try_recv(),
+            Err(broadcast::error::TryRecvError::Empty)
+        );
     }
 }
